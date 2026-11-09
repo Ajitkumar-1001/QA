@@ -6,4 +6,5 @@ node_modules/
 
 # Never tracked: private docs and GitHub metadata
 
+docs/
 .github/
