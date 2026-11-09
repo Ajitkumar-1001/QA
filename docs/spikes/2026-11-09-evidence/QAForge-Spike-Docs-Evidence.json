@@ -1,0 +1,321 @@
+{
+ "merged": [
+  {
+   "topic": "sandbox",
+   "answers": [
+    {
+     "question": "1. Is Vercel Sandbox available on the Hobby plan?",
+     "answer": "Yes. Hobby gets a monthly allotment at no cost and is never billed; usage beyond it is blocked rather than charged. Note: the docs moved from /docs/vercel-sandbox to /docs/sandbox (the old URL redirects).",
+     "source_url": "https://vercel.com/docs/sandbox/pricing",
+     "confidence": "verified",
+     "quote": "Sandbox is free for Hobby users within the usage quotas detailed above."
+    },
+    {
+     "question": "2a. Hobby max sandbox duration / timeout",
+     "answer": "Default timeout is 5 minutes, set with `timeout` and extended with sandbox.extendTimeout(). On Hobby, one session can run for at most 45 minutes (Pro/Enterprise: 24 hours). The cap applies per session, not per sandbox: it resets each time a persistent sandbox stops and resumes.",
+     "source_url": "https://vercel.com/docs/sandbox/pricing",
+     "confidence": "verified",
+     "quote": "The default timeout is 5 minutes. ... | Hobby | 45 minutes | ... The maximum duration applies to a single session, not to the sandbox itself. The limit resets every time a sandbox stops and resumes"
+    },
+    {
+     "question": "2b. Hobby vCPU / memory / ports / disk",
+     "answer": "Hobby allows at most 4 vCPUs and 8 GB of memory per sandbox, up to 15 open ports and 64 GB of disk. Each vCPU comes with 2 GB of memory, and the default is 2 vCPUs.",
+     "source_url": "https://vercel.com/docs/sandbox/pricing",
+     "confidence": "verified",
+     "quote": "| Hobby      | 4             | 8GB            | 15                 | 64 GB     | ... The default is 2 vCPUs."
+    },
+    {
+     "question": "2c. Hobby concurrent sandboxes",
+     "answer": "Hobby allows 10 concurrent sandboxes (Pro/Enterprise: 10,000). vCPU allocation starts at 20 vCPUs/min and ramps to at most 40 vCPUs/min. The control plane quota is 1,000 requests/min.",
+     "source_url": "https://vercel.com/docs/sandbox/pricing",
+     "confidence": "verified",
+     "quote": "| Hobby      | 10                   |"
+    },
+    {
+     "question": "2d. Hobby monthly included usage",
+     "answer": "Included per month on Hobby: 5 hours of Active CPU, 420 GB-hours of provisioned memory, 5,000 sandbox creations and 20 GB of data transfer. Also included: 15 GB of snapshot storage and 15 GB of drive storage (both lifetime, not monthly), plus 30 GB of drive reads and 30 GB of drive writes per month. Downloads into the sandbox are free. Outbound traffic and all traffic to and from exposed ports count toward data transfer.",
+     "source_url": "https://vercel.com/docs/sandbox/pricing",
+     "confidence": "verified",
+     "quote": "| Sandbox Active CPU | 5 hours/month | ... | Sandbox Provisioned Memory | 420 GB-hours/month | ... | Sandbox Creations | 5,000/month | ... | Sandbox Data Transfer | 20 GB/month |"
+    },
+    {
+     "question": "2e. What happens when Hobby quota is exceeded (blocked vs billed)",
+     "answer": "Blocked, not billed. Once the quota is exceeded, sandbox creation is paused until the next cycle (30 days from first use). Continuing requires upgrading to Pro.",
+     "source_url": "https://vercel.com/docs/sandbox/pricing",
+     "confidence": "verified",
+     "quote": "You **will not be charged** for any additional usage. Once you exceed the quotas, sandbox creation is paused until 30 days have passed since you first used the feature."
+    },
+    {
+     "question": "3. How does @vercel/sandbox authenticate from a local machine? Is a linked Vercel project required?",
+     "answer": "There are two options. (a) Recommended for local work: an OIDC token. Run `vercel link` then `vercel env pull`, which writes VERCEL_OIDC_TOKEN to .env.local. That token expires after 12 hours, so you re-run `vercel env pull`. (b) An access token: set VERCEL_TEAM_ID, VERCEL_PROJECT_ID and VERCEL_TOKEN and pass teamId, projectId and token to Sandbox.create(). Option (b) needs no `vercel link`, but it still needs a project ID, so both methods depend on an existing Vercel project.",
+     "source_url": "https://vercel.com/docs/sandbox/concepts/authentication",
+     "confidence": "verified",
+     "quote": "This creates a `.env.local` file with a `VERCEL_OIDC_TOKEN`. The token expires after 12 hours, so run `vercel env pull` again if you see authentication errors. ... You need: Your Vercel team ID; Your Vercel project ID; A Vercel access token with access to the team"
+    },
+    {
+     "question": "4. How does a sandbox expose a port, and is the URL public/unauthenticated?",
+     "answer": "Pass `ports: number[]` (up to 15) to Sandbox.create(), or replace the list later with sandbox.update({ ports }). Then sandbox.domain(port) returns the URL; it throws if the port wasn't declared. The docs call the URL 'publicly accessible'. Inferred: none of the pages I read mention any authentication or protection on it, so treat it as an open URL. Traffic to and from exposed ports is billable data transfer.",
+     "source_url": "https://vercel.com/docs/sandbox/sdk-reference",
+     "confidence": "verified",
+     "quote": "`sandbox.domain()` resolves a publicly accessible URL for a port you exposed during creation. It throws if the port is not registered to a route, so include the port in the `ports` array when creating the sandbox"
+    },
+    {
+     "question": "5. Base image OS, package manager, sudo, default runtimes",
+     "answer": "The default image is now `vercel/sandbox/universal` on Ubuntu (base `ubuntu:26.04`). It includes Node.js LTS (24), Python 3.14 and coding agents; other images include `vercel/sandbox/node:22|24|26`, `python:3.14`, `arch` and `ubuntu`. Install packages with `apt-get` using sudo (sudo: true in runCommand), and run `apt-get update` first. Amazon Linux 2023 with `dnf` applies only to sandboxes created with the deprecated `runtime` option (node22/node24/node26/python3.13). The overview says you get full root access.",
+     "source_url": "https://vercel.com/docs/sandbox/working-with-sandbox",
+     "confidence": "verified",
+     "quote": "The Ubuntu-based images, including the default `vercel/sandbox/universal` image, use `apt-get`. A new sandbox has no package index, so run `apt-get update` before you install ... Sandboxes created with the deprecated `runtime` property run Amazon Linux 2023 and use `dnf` instead"
+    },
+    {
+     "question": "6. Network egress control / firewall options",
+     "answer": "Set `networkPolicy` on create, or change it at runtime with sandbox.update({ networkPolicy }); no restart is needed. The modes are 'allow-all' (the default), 'deny-all' (blocks everything, DNS included) and user-defined policies. A user-defined policy denies by default and opens specific domains, including wildcards matched on SNI, plus `subnets.allow` and `subnets.deny` CIDR ranges. It can also add per-domain rules for credential brokering, request transforms, forwarding and direct responses. The firewall pages link a changelog titled 'Full Sandbox egress firewall now available on Hobby plan' (title seen only; I didn't open it).",
+     "source_url": "https://vercel.com/docs/sandbox/concepts/firewall",
+     "confidence": "verified",
+     "quote": "Sandboxes can use three distinct modes, which can be updated at runtime, without restarting the process. ... `allow-all` Default policy. ... `deny-all` Most restrictive policy. Denies all outbound network access, including DNS."
+    },
+    {
+     "question": "7. Reconnect by id from another process (Sandbox.get) and lifetime between calls",
+     "answer": "Yes, but lookup is now by `name`, not sandboxId: Sandbox.get({ name, resume?: false }), or Sandbox.getOrCreate. Sandboxes are persistent by default. When a session stops (timeout or stop()), the filesystem is snapshotted automatically. The next SDK call that needs a VM, such as runCommand, starts a new session from that snapshot; running processes do not survive and must be restarted, e.g. in an onResume hook. Snapshots expire 30 days after last use by default (configurable; 0 means never). Sandboxes that can't resume (non-persistent ones, or ones whose snapshot expired or was deleted) are removed after 14 days of inactivity. One running session lasts until its timeout: 5 minutes by default, 45 minutes max on Hobby.",
+     "source_url": "https://vercel.com/docs/sandbox/sdk-reference",
+     "confidence": "verified",
+     "quote": "The `name` accessor returns the sandbox's unique name within the project. Use this string with `Sandbox.get()` to retrieve the sandbox in a later process. ... `Sandbox.get()` retrieves an existing sandbox by name without resuming it by default (`resume: false`). A stopped persistent sandbox automatically resumes on the first SDK call that needs a running session"
+    },
+    {
+     "question": "7b. Retention of non-resumable sandboxes",
+     "answer": "Sandboxes that cannot resume are removed after 14 days of inactivity. Persistent sandboxes last as long as their snapshots, which by default expire 30 days after last use.",
+     "source_url": "https://vercel.com/docs/sandbox/concepts/persistent-sandboxes",
+     "confidence": "verified",
+     "quote": "Vercel removes sandboxes that can't resume from a snapshot after 14 days of inactivity. This applies to non-persistent (ephemeral) sandboxes and to sandboxes whose source snapshot has been deleted or has expired."
+    }
+   ]
+  },
+  {
+   "topic": "functions",
+   "answers": [
+    {
+     "question": "1. Vercel Functions on Hobby: default and maximum maxDuration with Fluid compute enabled",
+     "answer": "Hobby, Fluid compute on: 300s (5 minutes) by default and 300s at most. Hobby has no extended maximum. Pro and Enterprise are 300s by default, up to 800s, and up to 1800s in beta. Fluid compute has been on by default for new projects since April 23, 2025.",
+     "source_url": "https://vercel.com/docs/fluid-compute",
+     "confidence": "verified",
+     "quote": "Default / Max duration | 300s (5 minutes) / 300s (5 minutes) [Hobby]. ... As of April 23, 2025, fluid compute is enabled by default for new projects."
+    },
+    {
+     "question": "1b. Vercel Functions on Hobby: default and maximum maxDuration WITHOUT Fluid compute (legacy)",
+     "answer": "Not found. None of the current pages I fetched gives separate duration limits for Hobby with Fluid compute turned off: the limits page, the duration page, the Fluid compute page and the Hobby page. Each lists one Hobby value only, 300s default and 300s maximum. I am not giving the older figures from memory. To settle it, check a project with Fluid turned off in the dashboard, or ask Vercel support.",
+     "source_url": "https://vercel.com/docs/functions/configuring-functions/duration",
+     "confidence": "not_found",
+     "quote": "Hobby | 300s (5 minutes) | 300s (5 minutes) | - (Default | Maximum | Extended maximum)"
+    },
+    {
+     "question": "2. Memory limits on Hobby",
+     "answer": "Hobby functions get 2 GB of memory and 1 vCPU. That is both the default and the maximum. Pro and Enterprise can go up to 4 GB / 2 vCPU. Hobby also includes 360 GB-hrs of provisioned memory and the first 1,000,000 function invocations.",
+     "source_url": "https://vercel.com/docs/limits",
+     "confidence": "verified",
+     "quote": "Memory and CPU | 2 GB / 1 vCPU default and max [Hobby] | 2 GB / 1 vCPU default, up to 4 GB / 2 vCPU max [Pro and Enterprise]"
+    },
+    {
+     "question": "3. Is after()/waitUntil bounded by the same duration?",
+     "answer": "Yes. A promise passed to waitUntil() gets the same timeout as the function itself, and it is cancelled if the function times out. Next.js after() is built on waitUntil and runs within the route's default or configured max duration. On Hobby that is a 300s cap shared with the response work.",
+     "source_url": "https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package",
+     "confidence": "verified",
+     "quote": "Promises passed to waitUntil() will have the same timeout as the function itself. If the function times out, the promises will be cancelled. (Also, https://nextjs.org/docs/app/api-reference/functions/after: 'after will run for the platform's default or configured max duration of your route.')"
+    },
+    {
+     "question": "4. Vercel Hobby plan terms: non-commercial personal use restriction and what counts as commercial",
+     "answer": "Yes, Hobby is for non-commercial personal use only, and any commercial use needs Pro or Enterprise. Commercial use means any deployment used for the financial gain of anyone involved in making the project, including a paid employee or consultant writing the code. The listed examples include:\n- taking or processing payment from visitors\n- advertising a product or service for sale\n- being paid to build, update or host the site\n- a site whose main purpose is affiliate links\n- showing ads, such as Google AdSense\n\nAsking for donations is not commercial use.",
+     "source_url": "https://vercel.com/docs/limits/fair-use-guidelines",
+     "confidence": "verified",
+     "quote": "Hobby teams are restricted to non-commercial personal use only. All commercial usage of the platform requires either a Pro or Enterprise plan. Commercial usage is defined as any Deployment that is used for the purpose of financial gain of anyone involved in any part of the production of the project, including a paid employee or consultant writing the code. ... Asking for Donations does not fall under commercial usage."
+    },
+    {
+     "question": "5a. Does Vercel Queues exist on Hobby?",
+     "answer": "Yes. Hobby includes the first 1,000,000 Queue API operations. Functions that Queues triggers in push mode are billed at normal function compute rates, so they also run under the 300s Hobby function cap. The pricing page does not say what happens on Hobby after the first 1M operations.",
+     "source_url": "https://vercel.com/docs/queues/pricing",
+     "confidence": "verified",
+     "quote": "Queue API Operations | First 1,000,000 [Hobby Included] | Usage-based [Pro Included] ... Functions invoked by Queues in push mode continue to be charged at the existing compute rates."
+    },
+    {
+     "question": "5b. Cron on Hobby and cron frequency limits",
+     "answer": "Yes, cron jobs work on Hobby: up to 100 per project. The minimum interval is once per day, and timing is only accurate to the hour (\u00b159 min). Pro allows once per minute with per-minute timing.",
+     "source_url": "https://vercel.com/docs/cron-jobs/usage-and-pricing",
+     "confidence": "verified",
+     "quote": "Hobby | 100 cron jobs | Once per day | Per-hour (\u00b159 min)  /  Pro | 100 cron jobs | Once per minute | Per-minute"
+    },
+    {
+     "question": "6. Vercel Workflow (Workflow DevKit) availability on Hobby and its pricing/limits",
+     "answer": "Available on Hobby with monthly allowances: 50,000 Workflow Events and 1 GB of Workflow Data Written. Workflow Data Retained is not available on Hobby. Pro pays on demand:\n- $0.02 per 1K events\n- $0.50 per GB written\n- $0.50 per GB-month retained\n\nLimits:\n- maximum workflow replay duration is 240s\n- runs and sleeps have no duration limit\n- each step is capped by the normal function limits (300s on Hobby)\n\nI did not fetch useworkflow.dev separately. These figures come from Vercel's own Workflow pricing page.",
+     "source_url": "https://vercel.com/docs/workflows/pricing",
+     "confidence": "verified",
+     "quote": "Hobby includes monthly allowances for Workflow Events and Workflow Data Written. Workflow Data Retained is not available on Hobby, and Vercel bills Pro usage on demand. ... Workflow Events | 50,000 events / month included | $0.02 per 1K events ... Max workflow replay duration | 240s | Maximum run duration | No limit | Maximum sleep duration | No limit | Max runtime of individual step | see Vercel Functions limits"
+    }
+   ]
+  },
+  {
+   "topic": "mastra",
+   "answers": [
+    {
+     "question": "0. Current @mastra/core version (npm)",
+     "answer": "`npm view` on 2026-11-09 returned @mastra/core 1.82.0, @mastra/pg 1.35.0 and @mastra/deployer-vercel 1.2.41.",
+     "source_url": "https://www.npmjs.com/package/@mastra/core",
+     "confidence": "verified",
+     "quote": "npm view @mastra/core version -> 1.82.0"
+    },
+    {
+     "question": "1. Can a workflow suspend() in one process and be resumed by runId in a different process (createRun({runId}) / run.resume) with @mastra/pg PostgresStore?",
+     "answer": "Probably yes, but no doc page says 'different process' outright. What the docs do say: suspending saves a snapshot to the configured storage. Snapshots survive restarts and deployments. They are keyed by runId, and resume reloads them from storage with loadWorkflowSnapshot(). To resume with only a runId, you call createRun() first. PostgreSQL is a supported snapshot store: @mastra/pg PostgresStore writes the mastra_workflow_snapshot table. The run.resume reference has no cross-process example. It does say that when several server instances race to resume, the loser gets 409 Conflict over HTTP. Treat this as something the spike must prove: suspend in process A, then createRun({runId}) and resume() in process B, against Postgres.",
+     "source_url": "https://mastra.ai/docs/workflows/suspend-and-resume",
+     "confidence": "inferred",
+     "quote": "Snapshots are stored in your configured storage provider and persist across deployments and application restarts. ... When resuming with only a `runId`, create a run instance first using `createRun()`. (Also https://mastra.ai/docs/workflows/snapshots: \"By default, they use libSQL, but you can configure Upstash, PostgreSQL, or OracleDB instead.\" ... \"Each snapshot is saved in the `workflow_snapshots` table and identified by the workflow's `runId`.\"; https://mastra.ai/integrations/databases/postgresql.md: \"`mastra_workflow_snapshot`: Stores workflow state and execution data\")"
+    },
+    {
+     "question": "2a. Agent step control: maxSteps / stopWhen",
+     "answer": "Both are options on Agent.generate()/stream(). maxSteps caps the number of steps. stopWhen takes stop conditions such as a step count or a token limit.",
+     "source_url": "https://mastra.ai/reference/agents/generate",
+     "confidence": "verified",
+     "quote": "maxSteps: \"Maximum number of steps to run during execution.\" stopWhen: \"Conditions for stopping execution (e.g., step count, token limit).\""
+    },
+    {
+     "question": "2b. Restricting which tools an agent can call per call (activeTools / toolChoice)",
+     "answer": "Both work per call. activeTools is an array of tool names; when it is undefined, every tool is active. toolChoice accepts 'auto' (the default), 'none', 'required', or { type: 'tool', toolName } to force one specific tool.",
+     "source_url": "https://mastra.ai/reference/agents/generate",
+     "confidence": "verified",
+     "quote": "activeTools: \"Array of tool names that should be active during execution. If undefined, all available tools are active.\" toolChoice: \"Controls how tools are selected during generation.\" ... { type: 'tool'; toolName: string }: \"Force the model to use a specific tool.\""
+    },
+    {
+     "question": "2c. abortSignal / timeouts for model calls",
+     "answer": "abortSignal cancels the whole agent execution, including subagent runs that are still in flight. modelSettings.timeout takes { totalMs, stepMs, firstChunkMs }: totalMs is a hard deadline for the whole run with no fallback, stepMs covers one model call including consuming its stream, and firstChunkMs applies to streaming only. Going over any of them throws MastraTimeoutError. A stepMs timeout moves on to the next fallback model if one is configured.",
+     "source_url": "https://mastra.ai/reference/agents/generate",
+     "confidence": "verified",
+     "quote": "abortSignal: \"Signal object that allows you to abort the agent's execution.\" modelSettings.timeout: \"Accepts totalMs, the maximum duration of the entire agent run across every loop iteration, tool call and retry\" ... \"and stepMs, the maximum duration of a single model call including the time spent consuming its stream.\" \"Exceeding either budget fails with a MastraTimeoutError.\""
+    },
+    {
+     "question": "3. Does Mastra have a Workspace / sandbox concept with Vercel/E2B/Daytona providers? What package, what it does",
+     "answer": "Yes. You import Workspace and LocalSandbox from '@mastra/core/workspace' and pass the Workspace through the agent's `workspace` option (a function that returns one also works). It holds a sandbox and, optionally, a filesystem. The docs list these providers: AgentCore, Apple Container, Blaxel, Cloudflare Sandbox, Daytona (@mastra/daytona, DaytonaSandbox), Docker, E2B, E2B Desktop, Mastra, Modal, Railway, Fly.io Sprites and Vercel. The Vercel one is VercelSandbox from @mastra/vercel. It runs a Linux MicroVM that stays up for the session and supports background processes and exposed ports. Its default timeout is 5 minutes. Maximum runtime is 45 minutes on Hobby and up to 24 hours on Pro/Enterprise. It authenticates with a Vercel OIDC token, or with VERCEL_TOKEN, VERCEL_TEAM_ID and VERCEL_PROJECT_ID together. LocalSandbox is not isolated.",
+     "source_url": "https://mastra.ai/integrations/sandboxes/vercel.md",
+     "confidence": "verified",
+     "quote": "`VercelSandbox` runs a full Linux MicroVM with a persistent filesystem and long-running processes. ... Maximum runtime is plan-dependent (45 minutes on Hobby, up to 24 hours on Pro and Enterprise). (Workspace overview https://mastra.ai/docs/workspace/overview: import { LocalSandbox, Workspace } from '@mastra/core/workspace'; \"`LocalSandbox` runs commands on the application host by default and isn't isolated or secure.\")"
+    },
+    {
+     "question": "4. Observability/tracing: per-run trace persisted to Postgres",
+     "answer": "Set `observability: new Observability({ configs: { default: { serviceName, exporters: [new MastraStorageExporter()] } } })` on the Mastra instance, importing from '@mastra/observability'. That exporter writes traces to the configured storage. PostgresStore and PostgresStoreVNext are on the list of stores that support observability, and @mastra/pg writes traces to the mastra_traces table. PostgresStoreVNext partitions events by day and appends a row at span start and another at span end, so a trace shows up while the run is still going. The docs do not say whether traces are keyed by runId or by traceId. DefaultExporter is now deprecated in favour of MastraStorageExporter.",
+     "source_url": "https://mastra.ai/docs/observability/integrations/exporters/mastra-storage.md",
+     "confidence": "verified",
+     "quote": "persists traces to your configured storage backend, making them accessible through Studio. (Providers with Observability Support include PostgresStore, PostgresStoreVNext. PostgreSQL page: \"`mastra_traces`: Stores telemetry and tracing data\"; \"`PostgresStoreVNext` stores observability events in tables partitioned by day.\")"
+    },
+    {
+     "question": "5. Running on Vercel serverless (deployer-vercel) and long-running agents",
+     "answer": "@mastra/deployer-vercel (VercelDeployer) bundles the Mastra server into Vercel serverless functions. Its options are maxDuration (seconds), memory and regions. Mastra's own server.timeout defaults to 180000 ms and returns 504 when exceeded. It is enforced separately from Vercel's limit, so long workflow runs or streaming agents need both maxDuration and server.timeout raised. Storage has to be external, because the function filesystem is ephemeral and a file-based libSQL store will not persist. Serverless functions can be killed right after they respond, so you must await flush() on observability. The deployer does not do that for you. For long-running work the docs suggest a long-running server or VM instead. They also cover durable agents and background tasks (docs/harness/durable-agents) and workers and Inngest/Temporal runners, which I did not fetch. For running across processes, signals need a shared PubSub, a lease and shared storage, and the default EventEmitterPubSub only works inside one process.",
+     "source_url": "https://mastra.ai/integrations/deploy/vercel.md",
+     "confidence": "verified",
+     "quote": "Serverless functions can terminate immediately after returning a response. ... Raising `maxDuration` alone doesn't extend the 180 second Mastra limit ... Awaiting `flush()` ensures all traces are sent before the function exits. The Vercel deployer doesn't include `flush` calls. (Reference https://mastra.ai/reference/deployer/vercel.md: \"`maxDuration` doesn't change `server.timeout`.\")"
+    }
+   ]
+  },
+  {
+   "topic": "browser",
+   "answers": [
+    {
+     "question": "1. Recommended way to run headless Chromium in Vercel Sandbox (official example)",
+     "answer": "The official route is vercel-labs/agent-browser. Its docs page and its examples/environments demo run agent-browser plus Chrome inside an ephemeral Vercel Sandbox microVM, using the helper package `@agent-browser/sandbox` (`pnpm add @agent-browser/sandbox @vercel/sandbox`). The demo's lib/agent-browser-sandbox.ts creates the sandbox with `runtime: \"node24\"` (Amazon Linux), `timeout: 120_000` and no ports. It installs Chromium system libraries with `sudo dnf install -y --skip-broken` (nss, nspr, atk, at-spi2-*, libX*, mesa-libgbm, libdrm, mesa-libGL/EGL, cups-libs, alsa-lib, pango, cairo, gtk3, dbus-libs, libxkbcommon), then runs `npm install -g agent-browser` and `npx agent-browser install`, which installs Chromium (not dnf). For production it restores from a saved snapshot (`source: { type: \"snapshot\", snapshotId: AGENT_BROWSER_SNAPSHOT_ID }`) made once with `npx tsx scripts/create-snapshot.ts`. I found no official Vercel doc or KB page that recommends @sparticuz/chromium or a plain Playwright install for Sandbox, so those are not_found as official guidance. Caveat: on 2026-08-10 the Sandbox default image changed from Amazon Linux to Ubuntu 26.04 (`vercel/sandbox/universal`). The example's dnf step only works because it pins the deprecated `runtime: \"node24\"`. On the new Ubuntu images, apt would be needed instead.",
+     "source_url": "https://agent-browser.dev/next",
+     "confidence": "verified",
+     "quote": "\"The Vercel Sandbox runs Amazon Linux.\" / \"Chromium requires system libraries that are not installed by default, so fresh sandboxes need a `dnf install` step before agent-browser can launch Chrome.\" / \"Without optimization, each Sandbox run installs system dependencies + agent-browser + Chromium from scratch (~30 seconds).\" ... \"bringing startup down to sub-second.\" Also https://github.com/vercel-labs/agent-browser/tree/main/examples/environments: \"The app runs agent-browser and Chrome inside an ephemeral Vercel Sandbox microVM.\""
+    },
+    {
+     "question": "2. Vercel agent-browser / Browser product: what it is and whether it runs in Sandbox",
+     "answer": "agent-browser is a Vercel Labs open-source CLI and daemon for browser automation by agents. It produces accessibility-tree snapshots with element refs (@e1), and it can click, fill forms, take screenshots, and inspect console and network activity. The daemon is native Rust, and the changelog says the Node/Playwright daemon was removed in v0.20.0. It can attach to an already running Chrome via `--cdp` or `--auto-connect`, or use cloud browser providers. It does run inside Vercel Sandbox: there is an official example and the `@agent-browser/sandbox` helper. A Vercel changelog from 2026-08-04 also ships `@agent-browser/eve`, where Chromium and agent-browser run in the eve agent's sandbox. That post says \"eve sandbox\" and does not name Vercel Sandbox explicitly. I found no separate managed Vercel \"Browser\" product.",
+     "source_url": "https://vercel.com/changelog/give-your-eve-agent-a-browser",
+     "confidence": "verified",
+     "quote": "\"Chromium and agent-browser run in the eve sandbox, not your app.\" / \"Pre-install them in your sandbox template so sessions start warm, or let the extension install them on first use.\" README (https://github.com/vercel-labs/agent-browser/blob/main/README.md): \"You can also attach to a running Chrome with `--cdp` or `--auto-connect`\""
+    },
+    {
+     "question": "3. Playwright connectOverCDP to remote Chromium: requirements (/json/version, websocket via proxy/HTTPS domain)",
+     "answer": "The endpoint passed to `chromium.connectOverCDP(endpointURL, { headers, timeout })` can be an http URL (for example http://localhost:9222/), in which case Playwright discovers the browser WebSocket, or a direct ws:// devtools/browser URL. It works only with Chromium-based browsers. The connection timeout defaults to 30000 ms, and the docs say this connection is lower fidelity than browserType.connect(). Chrome must be launched with `--remote-debugging-port`. Its HTTP server exposes GET /json/version, whose `webSocketDebuggerUrl` points at the root browser target. On Vercel Sandbox, a port must be listed in `ports` at create time (up to 15), and `sandbox.domain(port)` then returns a public URL. The SDK reference does not say whether that URL uses https. The concepts docs warn that WebSocket connections to the public URL can close while the sandbox keeps running. The docs do not say whether CDP's localhost-bound webSocketDebuggerUrl survives the sandbox proxy (it may need rewriting or a ws/wss URL passed directly). Treat that part as unverified until a spike tests it.",
+     "source_url": "https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp",
+     "confidence": "verified",
+     "quote": "\"A CDP websocket endpoint or http url to connect to. For example `http://localhost:9222/`\" / \"This connection is significantly lower fidelity than the Playwright protocol connection via browserType.connect().\" / \"Connecting over the Chrome DevTools Protocol is only supported for Chromium-based browsers.\" CDP (https://chromedevtools.github.io/devtools-protocol/): \"webSocketDebuggerUrl ... WebSocket URL to attach to the root browser target\". Sandbox (https://vercel.com/docs/sandbox/concepts): \"WebSocket connections to a sandbox's public URL can close while the sandbox continues running.\" SDK ref: \"Ports to expose for `sandbox.domain()`. Up to 15.\""
+    },
+    {
+     "question": "4. Chromium install time/size on Amazon Linux 2023; npx playwright install --with-deps support on AL2023/dnf",
+     "answer": "Playwright does not officially support Amazon Linux or dnf. Its system requirements list only Debian 12/13 and Ubuntu 22.04/24.04/26.04 on Linux, so `--with-deps` should not be relied on for AL2023, and the official agent-browser example uses a manual dnf package list instead. Time: the only official figure is about 30 seconds for system deps plus agent-browser plus Chromium on a fresh Amazon Linux sandbox, and sub-second when restoring a snapshot. Size: Playwright docs say only that browsers take \"a few hundred megabytes\" and give one macOS example where chromium is 281M. I found no official AL2023-specific size. A 403 MB figure appeared only in a third-party GitHub PR, so it is not official. Note: since 2026-08-10 the Sandbox default image is Ubuntu 26.04, which Playwright supports, and AL2023 is still available through the deprecated `runtime` property.",
+     "source_url": "https://playwright.dev/docs/intro#system-requirements",
+     "confidence": "verified",
+     "quote": "\"Debian 12 / 13, Ubuntu 22.04 / 24.04 / 26.04 (x86-64 or arm64).\" Browsers page (https://playwright.dev/docs/browsers): \"These browsers will take a few hundred megabytes of disk space when installed\" (chromium 281M). Sandbox changelog (https://vercel.com/changelog/vercel-sandbox-managed-images): default changed \"from Amazon Linux to Ubuntu\"; \"The previous `runtime` property is deprecated, not removed, so existing code keeps working.\""
+    }
+   ]
+  }
+ ],
+ "critic": {
+  "corrections": [
+   {
+    "topic": "functions",
+    "question": "2. Memory limits on Hobby",
+    "issue": "Source attribution is wrong, so part of the answer is unsupported at the cited URL. https://vercel.com/docs/limits does support '2 GB / 1 vCPU default and max' for Hobby and 'up to 4 GB / 2 vCPU max' for Pro/Enterprise. It does not mention 360 GB-hrs of provisioned memory or 1,000,000 function invocations. Those figures appear only on the Hobby plan page.",
+    "corrected_answer": "Hobby functions get 2 GB / 1 vCPU, which is both the default and the max (source: /docs/limits). Pro/Enterprise go up to 4 GB / 2 vCPU. Separately, the Hobby plan page lists 'Provisioned Memory | 360 GB-hrs' and 'Function Invocations | First 1,000,000' as included usage (source: /docs/plans/hobby).",
+    "source_url": "https://vercel.com/docs/plans/hobby"
+   },
+   {
+    "topic": "mastra",
+    "question": "3. Does Mastra have a Workspace / sandbox concept with Vercel/E2B/Daytona providers?",
+    "issue": "The answer leaves out a fact that matters for the spike. The @mastra/vercel VercelSandbox page describes Vercel Sandbox as 'an ephemeral Firecracker MicroVM running Amazon Linux 2023'. Its only OS selector is the deprecated `runtime` option: \"runtime ('node24' | 'node22' | 'node26' | 'python3.13'): Sandbox runtime. (Default: 'node24')\". The page has no `image` option. It also still links the old /docs/vercel-sandbox URL. So the Mastra adapter, as documented, starts on the deprecated AL2023 runtime path, not the default Ubuntu `vercel/sandbox/universal` image. On that path packages install with dnf, and Playwright `--with-deps` is unsupported. The 45 min Hobby / 24 h Pro / 5 min default figures are confirmed verbatim.",
+    "corrected_answer": "As stated, plus this caveat: as documented, the @mastra/vercel VercelSandbox exposes only the deprecated `runtime` option (default 'node24', Amazon Linux 2023, dnf). It does not expose managed images (Ubuntu 26.04). The page calls the VM 'ephemeral', while Vercel's own docs say sandboxes are persistent by default. The spike should check whether the installed @mastra/vercel version accepts `image`. If it doesn't, plan Chromium dependency installs with dnf, or call @vercel/sandbox directly.",
+    "source_url": "https://mastra.ai/integrations/sandboxes/vercel.md"
+   },
+   {
+    "topic": "browser",
+    "question": "1. Recommended way to run headless Chromium in Vercel Sandbox (official example)",
+    "issue": "One detail is misattributed. The demo's examples/environments/lib/agent-browser-sandbox.ts imports only `{ Sandbox } from \"@vercel/sandbox\"`. It does not use the `@agent-browser/sandbox` helper package. That helper is documented on agent-browser.dev/next ('The @agent-browser/sandbox helper installs those system dependencies by default'). Everything else checks out in the file: `runtime: \"node24\"`, `timeout: 120_000`, `sudo dnf install -y --skip-broken`, and `source: { type: \"snapshot\", snapshotId }`. Its comment reads 'The sandbox base image is Amazon Linux (dnf)'. The snapshot-creation path uses `timeout: 300_000`. The agent-browser.dev quotes ('runs Amazon Linux', 'dnf install', '~30 seconds', 'sub-second') are confirmed.",
+    "corrected_answer": "Two official routes exist. (1) The helper `@agent-browser/sandbox` (`@agent-browser/sandbox/vercel`, documented on agent-browser.dev/next) installs the Chromium system dependencies for you. (2) The examples/environments demo uses raw `@vercel/sandbox` with `runtime: \"node24\"` (AL2023), `timeout: 120_000`, a manual `sudo dnf install -y --skip-broken` dependency list and `npx agent-browser install`. It restores from a snapshot in production; the snapshot is created with timeout 300_000. The caveat about Ubuntu managed images is unchanged.",
+    "source_url": "https://raw.githubusercontent.com/vercel-labs/agent-browser/main/examples/environments/lib/agent-browser-sandbox.ts"
+   },
+   {
+    "topic": "sandbox",
+    "question": "4. How does a sandbox expose a port, and is the URL public/unauthenticated?",
+    "issue": "The 'Inferred: no auth' part can be upgraded to explicit doc support. The Sandbox concepts page says: 'Exposed ports are accessible via a public URL, so be mindful of what services you run.' This matters for the browser plan: exposing Chrome's CDP port (9222) through sandbox.domain() would hand anyone with the URL full, unauthenticated control of the browser. The `ports` 'Up to 15', the domain() throw behavior and the update({ ports }) replacement semantics are confirmed in the SDK reference.",
+    "corrected_answer": "As stated. The concepts page explicitly warns that exposed ports are reachable through a public URL ('be mindful of what services you run'), and no auth layer is documented. Treat any exposed port, especially a CDP port, as open to the internet. Prefer running Playwright inside the sandbox, or put an auth or token check in front of the port.",
+    "source_url": "https://vercel.com/docs/sandbox/concepts"
+   },
+   {
+    "topic": "sandbox",
+    "question": "5. Base image OS, package manager, sudo, default runtimes",
+    "issue": "One qualifier is missing. The managed-images changelog says the universal default applies 'Starting with version 3 of the Sandbox SDK'. With older SDK versions, the default is not universal. It also says managed images run as the `ubuntu` (or `arch`) user with passwordless sudo, not the `vercel-sandbox` user. The rest is confirmed: the image list, apt-get with sudo, `apt-get update` first, deprecated runtime = AL2023 with dnf, runtimes node22/node24/node26/python3.13, and 'full root access'.",
+    "corrected_answer": "As stated, but say that `vercel/sandbox/universal:latest` (Ubuntu 26.04) is the default only for @vercel/sandbox SDK v3+. Managed images run as the `ubuntu` user with passwordless sudo.",
+    "source_url": "https://vercel.com/changelog/vercel-sandbox-managed-images"
+   },
+   {
+    "topic": "sandbox",
+    "question": "2e. What happens when Hobby quota is exceeded (blocked vs billed)",
+    "issue": "The source contradicts itself and the answer blends the two wordings without saying so. The pricing table section says creation 'is paused until the next billing cycle'. The Billing section says 'paused until 30 days have passed since you first used the feature'. 'You will not be charged' and 'upgrade to Pro' are confirmed.",
+    "corrected_answer": "Blocked, not billed. Sandbox creation pauses once Hobby quotas are exceeded. The docs describe the reset two ways: 'until the next billing cycle' and 'until 30 days have passed since you first used the feature'. Upgrading to Pro lifts the block.",
+    "source_url": "https://vercel.com/docs/sandbox/pricing"
+   },
+   {
+    "topic": "sandbox",
+    "question": "6. Network egress control / firewall options",
+    "issue": "Confirmed, but caveats that matter for an SSRF-sensitive design are missing. Per the same page: (a) 'subnets.allow' traffic bypasses SNI filtering, credential brokering and proxying; (b) a policy with `subnets.allow` and no allowed domains leaves DNS unrestricted, so data can leak over DNS; (c) `0.0.0.0/0` overrides domain scoping; (d) SNI-only matching allows domain fronting unless a `transform` rule forces the Host header; (e) an empty policy behaves as deny-all.",
+    "corrected_answer": "As stated, plus these documented caveats: subnets.allow bypasses SNI filtering and leaves DNS open; SNI matching is vulnerable to domain fronting unless you force Host through a transform rule; plain HTTP can only be filtered by IP range.",
+    "source_url": "https://vercel.com/docs/sandbox/concepts/firewall"
+   },
+   {
+    "topic": "mastra",
+    "question": "1. Can a workflow suspend() in one process and be resumed by runId in a different process?",
+    "issue": "Partly unverified at the cited URL. The suspend-and-resume page confirms 'persist across deployments and application restarts' and 'When resuming with only a runId, create a run instance first using createRun()'. It does not mention loadWorkflowSnapshot() or the 409 Conflict race. Those come from pages I did not re-fetch. The quoted table names also conflict: the snapshots-page quote says `workflow_snapshots`, while the @mastra/pg page lists `mastra_workflow_snapshot`, which I confirmed. Keeping the 'inferred' confidence is right.",
+    "corrected_answer": "Unchanged: the claim is inferred and the spike must prove cross-process resume against Postgres. The Postgres table is `mastra_workflow_snapshot`, per the @mastra/pg page. Cite the run.resume reference for the 409 Conflict claim.",
+    "source_url": "https://mastra.ai/docs/workflows/suspend-and-resume"
+   },
+   {
+    "topic": "mastra",
+    "question": "2a. Agent step control: maxSteps / stopWhen",
+    "issue": "Confirmed. One useful fact from the same page was left out: maxSteps defaults to 5.",
+    "corrected_answer": "As stated. maxSteps defaults to 5 ('The default is 5, but can be increased').",
+    "source_url": "https://mastra.ai/reference/agents/generate"
+   },
+   {
+    "topic": "all",
+    "question": "Answers re-checked with no correction needed",
+    "issue": "I re-fetched each source on 2026-11-09 and the quotes and numbers match. Sandbox: Q1 (the /docs/vercel-sandbox \u2192 /docs/sandbox 308 redirect is confirmed), 2a, 2b, 2c (20\u219240 vCPU/min with a 20/min ramp, 1,000 req/min control plane), 2d (5 h CPU, 420 GB-h, 5,000 creations, 20 GB transfer, 15 GB snapshot and drive storage lifetime, 30 GB drive reads/writes), Q3 auth, Q7 Sandbox.get({name, resume:false}) / getOrCreate / onResume / 30-day snapshot expiry, Q7b 14 days. Functions: Q1 (300s/300s Hobby, 800s, 1800s beta, April 23, 2025), 1b not_found (the duration table covers fluid compute only), Q3 waitUntil and after(), Q4 fair-use wording, 5a Queues 1M ops, 5b cron (100 jobs, daily, \u00b159 min), Q6 Workflow (50,000 events, 1 GB written, no retention on Hobby, $0.02/1K, $0.50/GB, 240s replay, no run or sleep limit). Mastra: Q0 versions (npm view: 1.82.0 / 1.35.0 / 1.2.41), 2b, 2c timeout semantics, Q4 MastraStorageExporter (DefaultExporter deprecated, PostgresStoreVNext partitioned by day and event-sourced), Q5 deployer (server.timeout 180000 ms \u2192 504, flush not included, ephemeral FS). Browser: Q2 eve changelog (2026-08-04, 'eve sandbox' wording), Q3 Playwright connectOverCDP quotes and the WebSocket-close warning, Q4 Playwright OS list and the '281M' / 'few hundred megabytes' quotes, managed-images changelog date 2026-08-10.",
+    "corrected_answer": "No change."
+   }
+  ]
+ }
+}
