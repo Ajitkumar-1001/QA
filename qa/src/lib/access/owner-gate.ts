@@ -1,5 +1,5 @@
 /**
- * Milestone 0 owner gate (PRD v2 FR-001, FR-032, §13 Security).
+ * Milestone 0 owner gate (FR-001, FR-032).
  * Call this inside every server-side handler, before reading input or data.
  */
 import { createHash, timingSafeEqual } from "node:crypto";

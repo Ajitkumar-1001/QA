@@ -1,5 +1,5 @@
 /**
- * Verdict computation (PRD v2 FR-023, FR-029). Host code decides the verdict
+ * Verdict computation (FR-023, FR-029). Host code decides the verdict
  * from the stored criteria and the final capture. No model output is used.
  */
 import { evaluateCriterion } from "./criteria.ts";

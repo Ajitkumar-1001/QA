@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { isOwnerSecret } from "./owner-gate.ts";
 
-// FR-001 / §13 Security: owner secret compared in constant time.
+// FR-001 / Security: owner secret compared in constant time.
 test("accepts only the exact configured secret", () => {
   assert.equal(isOwnerSecret("s3cret-value", "s3cret-value"), true);
   assert.equal(isOwnerSecret("s3cret-valuX", "s3cret-value"), false);

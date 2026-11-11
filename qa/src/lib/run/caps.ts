@@ -1,5 +1,5 @@
 /**
- * Run-creation caps (PRD v2 FR-003, FR-004, §13 Scalability and capacity).
+ * Run-creation caps (FR-003, FR-004).
  * Pure checks: the caller supplies counts read from stored runs.
  */
 
