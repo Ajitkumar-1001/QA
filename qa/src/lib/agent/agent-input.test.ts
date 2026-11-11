@@ -6,9 +6,10 @@ import {
   buildAgentInput,
   type AgentToolResult,
 } from "./agent-input.ts";
+import { AGENT_TOOL_DEFINITIONS } from "./tools.ts";
 
-// FR-012: agent input is only instructions, objective, and tool results.
-test("buildAgentInput returns exactly instructions, objective, and toolResults", () => {
+// FR-012: agent input is instructions, objective, tool results, and tool definitions.
+test("buildAgentInput returns exactly instructions, objective, toolResults, and tools", () => {
   const input = buildAgentInput({
     objective: "Add a todo named Buy milk",
     toolResults: [
@@ -19,12 +20,44 @@ test("buildAgentInput returns exactly instructions, objective, and toolResults",
     "instructions",
     "objective",
     "toolResults",
+    "tools",
   ]);
   assert.equal(input.instructions, AGENT_INSTRUCTIONS);
   assert.equal(input.objective, "Add a todo named Buy milk");
   assert.deepEqual(input.toolResults, [
     { callId: "call-1", toolName: "read_page", content: "page snapshot" },
   ]);
+  assert.equal(input.tools, AGENT_TOOL_DEFINITIONS);
+});
+
+// FR-017: caller-supplied tools never replace the host allowlist.
+test("buildAgentInput always uses AGENT_TOOL_DEFINITIONS even if source carries tools", () => {
+  const source = {
+    objective: "Submit the form",
+    tools: [
+      {
+        name: "navigate",
+        description: "Open a URL",
+        parameters: { type: "object", properties: { url: { type: "string" } } },
+      },
+    ],
+  } as {
+    objective: string;
+    toolResults?: readonly AgentToolResult[];
+  };
+
+  const input = buildAgentInput(source);
+  assert.equal(input.tools, AGENT_TOOL_DEFINITIONS);
+  assert.deepEqual(
+    input.tools.map((tool) => tool.name),
+    ["read_page", "click_element", "fill_field", "press_key"],
+  );
+});
+
+test("buildAgentInput yields an empty toolResults array when omitted", () => {
+  const input = buildAgentInput({ objective: "Read the page heading" });
+  assert.deepEqual(input.toolResults, []);
+  assert.equal(input.tools, AGENT_TOOL_DEFINITIONS);
 });
 
 // FR-012: criteria and other run fields must never appear in the agent input.

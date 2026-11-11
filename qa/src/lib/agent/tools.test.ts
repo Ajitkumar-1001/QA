@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  AGENT_TOOL_DEFINITIONS,
+  ALLOWED_KEYS,
   MAX_FILL_TEXT_LENGTH,
   TOOL_NAMES,
   toBinaryArgs,
@@ -26,6 +28,43 @@ test("allowlist has exactly four tools and no url-like argument fields", () => {
         `${name}.${key}`,
       );
     }
+  }
+});
+
+// FR-017: definitions sent to the model match the allowlist and carry no URL surface.
+test("AGENT_TOOL_DEFINITIONS expose exactly the four allowlisted tools without URL fields", () => {
+  const names = AGENT_TOOL_DEFINITIONS.map((tool) => tool.name);
+  assert.deepEqual(names, TOOL_NAMES);
+  assert.equal(AGENT_TOOL_DEFINITIONS.length, 4);
+  assert.equal(new Set(names).size, 4);
+
+  const fill = AGENT_TOOL_DEFINITIONS.find((tool) => tool.name === "fill_field");
+  const press = AGENT_TOOL_DEFINITIONS.find((tool) => tool.name === "press_key");
+  assert.ok(fill);
+  assert.ok(press);
+
+  const fillProps = fill.parameters.properties as Record<string, { maxLength?: number }>;
+  const pressProps = press.parameters.properties as Record<string, { enum?: readonly string[] }>;
+  assert.equal(fillProps.text?.maxLength, MAX_FILL_TEXT_LENGTH);
+  assert.deepEqual(pressProps.key?.enum, [...ALLOWED_KEYS]);
+
+  for (const tool of AGENT_TOOL_DEFINITIONS) {
+    assert.equal(tool.parameters.additionalProperties, false, tool.name);
+    assert.equal(typeof tool.parameters, "object");
+    assert.ok(tool.parameters !== null);
+
+    const properties = (tool.parameters.properties ?? {}) as Record<string, unknown>;
+    for (const key of Object.keys(properties)) {
+      assert.equal(
+        /url|href|link|navigat|location|src/i.test(key),
+        false,
+        `${tool.name}.${key}`,
+      );
+    }
+
+    const serialized = JSON.stringify(tool);
+    assert.equal(serialized.includes('"format":"uri"'), false, tool.name);
+    assert.equal(/criteri|verdict|url|navigat/i.test(tool.description), false, tool.name);
   }
 });
 
