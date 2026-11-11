@@ -1,5 +1,5 @@
 /**
- * Criteria for a run (PRD v2 FR-010, FR-011, §16.2, §16.3).
+ * Criteria for a run (FR-010, FR-011).
  * The criteria call's output is validated against a closed schema, and each
  * criterion is evaluated by host code against the final capture.
  */

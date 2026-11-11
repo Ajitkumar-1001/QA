@@ -50,7 +50,7 @@ test("INCONCLUSIVE requires a reason code; PASS and FAIL carry none", () => {
   assert.equal(ok.run.reasonCode, "lease_expired");
 });
 
-// §20.2: every reason code has its display text.
+// Every reason code has its display text.
 test("every reason code has display text", () => {
   assert.equal(REASON_CODES.length, 10);
   for (const code of REASON_CODES) assert.ok(REASON_TEXT[code].length > 0);

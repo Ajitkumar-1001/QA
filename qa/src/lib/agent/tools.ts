@@ -43,6 +43,45 @@ export const toolArgumentSchemas = {
   }),
 } as const;
 
+/** Short fixed descriptions for the model; no grading or navigation language (FR-017). */
+const TOOL_DESCRIPTIONS = {
+  read_page: "Return the accessibility snapshot of the current page.",
+  click_element: "Click the element identified by ref.",
+  fill_field: "Type text into the field identified by ref.",
+  press_key: "Press one allowed key.",
+} as const satisfies Record<ToolName, string>;
+
+export type AgentToolDefinition = {
+  name: ToolName;
+  description: string;
+  parameters: Record<string, unknown>;
+};
+
+/** Freeze an object and its nested plain objects/arrays (one local helper). */
+function freezeDeep<T>(value: T): T {
+  if (value === null || typeof value !== "object" || Object.isFrozen(value)) {
+    return value;
+  }
+  Object.freeze(value);
+  for (const child of Object.values(value)) {
+    freezeDeep(child);
+  }
+  return value;
+}
+
+/** Allowlisted tool definitions sent to the browsing agent (FR-017). */
+export const AGENT_TOOL_DEFINITIONS: readonly AgentToolDefinition[] = Object.freeze(
+  TOOL_NAMES.map((name) =>
+    Object.freeze({
+      name,
+      description: TOOL_DESCRIPTIONS[name],
+      parameters: freezeDeep(
+        z.toJSONSchema(toolArgumentSchemas[name]) as Record<string, unknown>,
+      ),
+    }),
+  ),
+);
+
 export type ValidatedToolCall =
   | { name: "read_page"; args: z.infer<typeof toolArgumentSchemas.read_page> }
   | { name: "click_element"; args: z.infer<typeof toolArgumentSchemas.click_element> }

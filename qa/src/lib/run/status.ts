@@ -1,5 +1,5 @@
 /**
- * Run status, verdict and reason codes (PRD v2 §14.2, §20.2).
+ * Run status, verdict and reason codes.
  * The one place that defines the allowed status transitions.
  */
 

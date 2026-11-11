@@ -7,7 +7,7 @@ import type { ReasonCode } from "./status.ts";
 /** Run deadline measured from the claim. */
 export const RUN_DEADLINE_MS = 240_000;
 
-/** Max agent-loop model calls. One step is one model call plus its tool calls. */
+/** Max agent-loop model calls. One step is one agent model call; tool calls made in that call do not use extra steps. */
 export const STEP_BUDGET = 5;
 
 /** Timeout for the criteria model call. */

@@ -59,7 +59,7 @@ const capture = {
   pageText: "todos\n  Buy milk\n\tWalk the dog\n1   item\nleft",
 };
 
-// §16.2: text_visible holds on exact characters after whitespace is collapsed.
+// text_visible holds on exact characters after whitespace is collapsed.
 test("text_visible collapses whitespace and matches exact characters", () => {
   const held = evaluateCriterion({ kind: "text_visible", expected: "1 item left" }, capture);
   assert.equal(held.held, true);
