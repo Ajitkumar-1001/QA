@@ -16,6 +16,13 @@ function at(msFromClaim: number): Date {
   return new Date(claimedAt.getTime() + msFromClaim);
 }
 
+test("pins host limit constants to their contracted values", () => {
+  assert.equal(STEP_BUDGET, 5);
+  assert.equal(RUN_DEADLINE_MS, 240_000);
+  assert.equal(CRITERIA_CALL_TIMEOUT_MS, 30_000);
+  assert.equal(AGENT_CALL_TIMEOUT_MS, 45_000);
+});
+
 // FR-019: step budget — 4 used may continue; 5 used must stop.
 test("step budget boundary: 4 used may continue, 5 used is exhausted", () => {
   assert.deepEqual(
