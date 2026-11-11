@@ -28,7 +28,7 @@ test("refuses at the concurrency cap and accepts once a run finishes", () => {
   assert.ok(checkRunCaps({ runsInWindow: 5, activeRuns: 1, monthlyCap: 100, concurrencyCap: 2, now }).ok);
 });
 
-// Step 7: a monthly cap of zero stops all runs.
+// A monthly cap of zero stops all runs.
 test("a monthly cap of zero refuses every run", () => {
   const r = checkRunCaps({ runsInWindow: 0, activeRuns: 0, monthlyCap: 0, concurrencyCap: 2, now });
   assert.ok(!r.ok);
