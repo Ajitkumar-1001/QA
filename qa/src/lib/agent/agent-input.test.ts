@@ -60,6 +60,24 @@ test("buildAgentInput yields an empty toolResults array when omitted", () => {
   assert.equal(input.tools, AGENT_TOOL_DEFINITIONS);
 });
 
+// FR-012: an explicitly empty toolResults array is copied, not shared.
+test("buildAgentInput yields a fresh empty toolResults array when given []", () => {
+  const toolResults: AgentToolResult[] = [];
+  const input = buildAgentInput({
+    objective: "Read the page heading",
+    toolResults,
+  });
+  assert.deepEqual(input.toolResults, []);
+  assert.notEqual(input.toolResults, toolResults);
+  assert.deepEqual(Object.keys(input).sort(), [
+    "instructions",
+    "objective",
+    "toolResults",
+    "tools",
+  ]);
+  assert.equal(JSON.stringify(input).includes("criteria"), false);
+});
+
 // FR-012: criteria and other run fields must never appear in the agent input.
 test("buildAgentInput drops criteria and extra source fields so they cannot leak", () => {
   const distinctive: Criterion[] = [
