@@ -122,34 +122,46 @@ test("4 model + 6 tool acceptance: shuffled input lists 10 entries in time order
     [80, 50, 30, 60, 40, 80, 50, 60, 70, 50],
   );
 
-  const m1 = entries[0]!;
-  assert.equal(m1.kind, "model");
-  if (m1.kind === "model") {
-    assert.equal(m1.output, "model-1-out");
-    assert.equal(m1.inputTokens, 10);
-    assert.equal(m1.outputTokens, 5);
+  const expected = [
+    { kind: "model", output: "model-1-out", inputTokens: 10, outputTokens: 5 },
+    { kind: "tool", args: {}, resultSummary: "ok page snapshot" },
+    { kind: "tool", args: { ref: "e1" }, resultSummary: "ok clicked" },
+    { kind: "model", output: "model-2-out", inputTokens: 20, outputTokens: 8 },
+    { kind: "tool", args: { ref: "e2", text: "hi" }, resultSummary: "ok filled" },
+    { kind: "model", output: "model-3-out", inputTokens: 30, outputTokens: 12 },
+    { kind: "tool", args: {}, resultSummary: "ok updated page" },
+    { kind: "tool", args: { ref: "e3" }, resultSummary: "error not found" },
+    { kind: "model", output: "model-4-out", inputTokens: 40, outputTokens: 15 },
+    { kind: "tool", args: { key: "Enter" }, resultSummary: "ok pressed" },
+  ] as const;
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]!;
+    const exp = expected[i]!;
+    assert.equal(entry.kind, exp.kind, entry.id);
+    if (entry.kind === "model" && exp.kind === "model") {
+      assert.equal(entry.output, exp.output, entry.id);
+      assert.equal(entry.inputTokens, exp.inputTokens, entry.id);
+      assert.equal(entry.outputTokens, exp.outputTokens, entry.id);
+    }
+    if (entry.kind === "tool" && exp.kind === "tool") {
+      assert.deepEqual(entry.args, exp.args, entry.id);
+      assert.equal(entry.resultSummary, exp.resultSummary, entry.id);
+    }
   }
 
-  const t1 = entries[1]!;
-  assert.equal(t1.kind, "tool");
-  if (t1.kind === "tool") {
-    assert.deepEqual(t1.args, {});
-    assert.equal(t1.resultSummary, "ok page snapshot");
-  }
-
-  const t5 = entries[7]!;
-  assert.equal(t5.kind, "tool");
-  if (t5.kind === "tool") {
-    assert.deepEqual(t5.args, { ref: "e3" });
-    assert.equal(t5.resultSummary, "error not found");
-  }
-
-  const m4 = entries[8]!;
-  assert.equal(m4.kind, "model");
-  if (m4.kind === "model") {
-    assert.equal(m4.output, "model-4-out");
-    assert.equal(m4.inputTokens, 40);
-    assert.equal(m4.outputTokens, 15);
+  const t3 = entries[4]!;
+  assert.equal(t3.kind, "tool");
+  if (t3.kind === "tool") {
+    const original = records.find((r) => r.id === "t3");
+    assert.ok(original);
+    assert.equal(original.kind, "tool");
+    if (original.kind === "tool") {
+      const before = { ...original.args };
+      t3.args.mutated = true;
+      assert.deepEqual(original.args, before);
+      assert.equal("mutated" in original.args, false);
+    }
   }
 });
 

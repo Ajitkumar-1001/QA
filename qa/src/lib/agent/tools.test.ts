@@ -52,6 +52,7 @@ test("AGENT_TOOL_DEFINITIONS expose exactly the four allowlisted tools without U
     assert.equal(tool.parameters.additionalProperties, false, tool.name);
     assert.equal(typeof tool.parameters, "object");
     assert.ok(tool.parameters !== null);
+    assert.ok(Object.isFrozen(tool.parameters), tool.name);
 
     const properties = (tool.parameters.properties ?? {}) as Record<string, unknown>;
     for (const key of Object.keys(properties)) {
@@ -63,7 +64,7 @@ test("AGENT_TOOL_DEFINITIONS expose exactly the four allowlisted tools without U
     }
 
     const serialized = JSON.stringify(tool);
-    assert.equal(serialized.includes('"format":"uri"'), false, tool.name);
+    assert.equal(/"format"\s*:\s*"uri"/.test(serialized), false, tool.name);
     assert.equal(/criteri|verdict|url|navigat/i.test(tool.description), false, tool.name);
   }
 });

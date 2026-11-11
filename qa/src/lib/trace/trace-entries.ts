@@ -118,7 +118,7 @@ function toEntry(
     ...base,
     kind: "tool",
     toolName: record.toolName,
-    args: record.args,
+    args: { ...record.args },
     resultSummary: resultSummary(record.result),
   };
 }

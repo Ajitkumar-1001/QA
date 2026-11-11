@@ -57,13 +57,27 @@ export type AgentToolDefinition = {
   parameters: Record<string, unknown>;
 };
 
+/** Freeze an object and its nested plain objects/arrays (one local helper). */
+function freezeDeep<T>(value: T): T {
+  if (value === null || typeof value !== "object" || Object.isFrozen(value)) {
+    return value;
+  }
+  Object.freeze(value);
+  for (const child of Object.values(value)) {
+    freezeDeep(child);
+  }
+  return value;
+}
+
 /** Allowlisted tool definitions sent to the browsing agent (FR-017). */
 export const AGENT_TOOL_DEFINITIONS: readonly AgentToolDefinition[] = Object.freeze(
   TOOL_NAMES.map((name) =>
     Object.freeze({
       name,
       description: TOOL_DESCRIPTIONS[name],
-      parameters: z.toJSONSchema(toolArgumentSchemas[name]) as Record<string, unknown>,
+      parameters: freezeDeep(
+        z.toJSONSchema(toolArgumentSchemas[name]) as Record<string, unknown>,
+      ),
     }),
   ),
 );

@@ -80,7 +80,7 @@ test("applyCaptureLimits keeps a screenshot of exactly 1 MB", () => {
   assert.equal(result.capture.screenshot, screenshot);
 });
 
-test("assessCaptureAttempt rejects a screenshot over SCREENSHOT_MAX_BYTES before limits apply", () => {
+test("assessCaptureAttempt rejects a screenshot over SCREENSHOT_MAX_BYTES", () => {
   const result = assessCaptureAttempt({
     finalUrl: "https://example.com/",
     screenshot: new Uint8Array(SCREENSHOT_MAX_BYTES + 1),

@@ -57,7 +57,9 @@ test("parseServerConfig rejects whitespace-only owner secret", () => {
     assert.ok(!result.ok);
     assert.ok(result.errors.some((e) => e.variable === "QAFORGE_OWNER_SECRET"));
     const serialized = JSON.stringify(result.errors);
-    assert.equal(serialized.includes(secret.trim() ? secret : "   "), false);
+    if (secret !== "") {
+      assert.equal(serialized.includes(secret), false);
+    }
   }
 });
 
