@@ -6,7 +6,7 @@
 import { PAGE_TEXT_MAX_BYTES, truncatePageText } from "../agent/untrusted.ts";
 import type { ReasonCode } from "../run/status.ts";
 
-/** Screenshot soft limit; over-limit bytes are dropped (a cut image is useless). */
+/** Screenshot size limit; assessCaptureAttempt fails above this byte length. */
 export const SCREENSHOT_MAX_BYTES = 1 * 1024 * 1024;
 
 /** Max console log entries kept per run. */
@@ -38,12 +38,10 @@ export type EvidenceCapture = {
 /** Which parts of a capture were truncated or dropped when limits were applied. */
 export type CaptureTruncation = {
   pageText: boolean;
-  /** Console entries dropped after the first CONSOLE_LOG_MAX_ENTRIES (the marker). */
+  /** Console entries dropped after the first CONSOLE_LOG_MAX_ENTRIES (recorded). */
   consoleDropped: number;
-  /** Network entries dropped after the first NETWORK_LOG_MAX_ENTRIES (the marker). */
+  /** Network entries dropped after the first NETWORK_LOG_MAX_ENTRIES (recorded). */
   networkDropped: number;
-  /** True when the screenshot exceeded SCREENSHOT_MAX_BYTES and was dropped. */
-  screenshotOverLimit: boolean;
 };
 
 export type BoundedCapture = {
@@ -54,20 +52,18 @@ export type BoundedCapture = {
 /**
  * Apply evidence size limits to a final capture.
  * Page text is cut via truncatePageText; console and network keep the first
- * 500 entries; a screenshot over 1 MB is dropped rather than cut.
- * Callers must assessCaptureAttempt before applying limits.
+ * 500 entries. Callers must assessCaptureAttempt first; screenshot is unchanged.
  */
 export function applyCaptureLimits(capture: EvidenceCapture): BoundedCapture {
   const pageText = truncatePageText(capture.pageText, PAGE_TEXT_MAX_BYTES);
   const consoleDropped = Math.max(0, capture.consoleLog.length - CONSOLE_LOG_MAX_ENTRIES);
   const networkDropped = Math.max(0, capture.networkLog.length - NETWORK_LOG_MAX_ENTRIES);
-  const screenshotOverLimit = capture.screenshot.byteLength > SCREENSHOT_MAX_BYTES;
 
   return {
     capture: {
       finalUrl: capture.finalUrl,
       pageText,
-      screenshot: screenshotOverLimit ? new Uint8Array(0) : capture.screenshot,
+      screenshot: capture.screenshot,
       consoleLog: capture.consoleLog.slice(0, CONSOLE_LOG_MAX_ENTRIES),
       networkLog: capture.networkLog.slice(0, NETWORK_LOG_MAX_ENTRIES),
     },
@@ -75,7 +71,6 @@ export function applyCaptureLimits(capture: EvidenceCapture): BoundedCapture {
       pageText: pageText !== capture.pageText,
       consoleDropped,
       networkDropped,
-      screenshotOverLimit,
     },
   };
 }

@@ -77,15 +77,17 @@ test("applyCaptureLimits keeps a screenshot of exactly 1 MB", () => {
   const screenshot = new Uint8Array(SCREENSHOT_MAX_BYTES);
   const result = applyCaptureLimits(baseCapture({ screenshot }));
   assert.equal(result.capture.screenshot.byteLength, SCREENSHOT_MAX_BYTES);
-  assert.equal(result.truncated.screenshotOverLimit, false);
   assert.equal(result.capture.screenshot, screenshot);
 });
 
-test("applyCaptureLimits drops a screenshot of 1 MB + 1 byte and flags it", () => {
-  const screenshot = new Uint8Array(SCREENSHOT_MAX_BYTES + 1);
-  const result = applyCaptureLimits(baseCapture({ screenshot }));
-  assert.equal(result.capture.screenshot.byteLength, 0);
-  assert.equal(result.truncated.screenshotOverLimit, true);
+test("assessCaptureAttempt rejects a screenshot over SCREENSHOT_MAX_BYTES before limits apply", () => {
+  const result = assessCaptureAttempt({
+    finalUrl: "https://example.com/",
+    screenshot: new Uint8Array(SCREENSHOT_MAX_BYTES + 1),
+  });
+  assert.equal(result.ok, false);
+  assert.ok(!result.ok);
+  assert.equal(result.reasonCode, "capture_failed");
 });
 
 test("applyCaptureLimits truncates page text over the limit with the marker", () => {
@@ -149,12 +151,3 @@ test("assessCaptureAttempt is ok when the screenshot is exactly SCREENSHOT_MAX_B
   assert.equal(result.ok, true);
 });
 
-test("assessCaptureAttempt is capture_failed when the screenshot is SCREENSHOT_MAX_BYTES + 1", () => {
-  const result = assessCaptureAttempt({
-    finalUrl: "https://example.com/",
-    screenshot: new Uint8Array(SCREENSHOT_MAX_BYTES + 1),
-  });
-  assert.equal(result.ok, false);
-  assert.ok(!result.ok);
-  assert.equal(result.reasonCode, "capture_failed");
-});

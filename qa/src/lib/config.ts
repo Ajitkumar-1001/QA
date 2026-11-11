@@ -11,7 +11,7 @@ export const DEFAULT_OBJECTIVE =
 export const DEFAULT_MONTHLY_RUN_CAP = 100;
 export const DEFAULT_CONCURRENCY_CAP = 2;
 
-const STRICT_INT = /^[0-9]+$/;
+const STRICT_INT = /^(0|[1-9][0-9]*)$/;
 
 const safeParsedInt = z.number().refine((n) => Number.isSafeInteger(n), {
   message: "must be a safe integer",
@@ -40,7 +40,10 @@ const httpsUrlNoCredentials = z
   }, { message: "must not contain credentials" });
 
 const envSchema = z.object({
-  QAFORGE_OWNER_SECRET: z.string().min(32),
+  QAFORGE_OWNER_SECRET: z
+    .string()
+    .transform((value) => value.trim())
+    .pipe(z.string().min(32)),
   QAFORGE_TARGET_URL: httpsUrlNoCredentials,
   QAFORGE_OBJECTIVE: z.string().min(1).max(1000),
   QAFORGE_MONTHLY_RUN_CAP: strictNonNegInt,

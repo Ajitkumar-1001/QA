@@ -52,17 +52,21 @@ function formatCapturedContent(content: unknown): string {
   }
 }
 
-/** Renders one piece of captured content as literal text (never as HTML). */
+/**
+ * Renders one piece of captured content as literal text (never as HTML).
+ * Stable heading id per kind; only one block per kind should appear on a page.
+ */
 export function CapturedText({
   kind,
   content,
 }: CapturedTextProps): ReactElement {
   const label = KIND_LABELS[kind];
+  const headingId = `captured-${kind}`;
   const text = formatCapturedContent(content);
   return createElement(
     "section",
-    { "aria-label": label },
-    createElement("h2", null, label),
+    { "aria-labelledby": headingId },
+    createElement("h2", { id: headingId }, label),
     createElement(
       "pre",
       { className: "whitespace-pre-wrap break-words" },

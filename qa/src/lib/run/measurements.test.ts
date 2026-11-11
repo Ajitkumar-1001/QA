@@ -35,6 +35,13 @@ test("startMeasurements requires a non-empty model identifier", () => {
   assert.deepEqual(ok.measurements.modelCalls, []);
 });
 
+test("startMeasurements stores a trimmed model identifier", () => {
+  const result = startMeasurements("  test-model-2026-01-01  ");
+  assert.equal(result.ok, true);
+  assert.ok(result.ok);
+  assert.equal(result.measurements.modelId, "test-model-2026-01-01");
+});
+
 test("recorders never mutate their input", () => {
   const base = started();
   const before = snapshot(base);
@@ -153,6 +160,25 @@ test("criteria-only run is incomplete without agent steps", () => {
   const summary = summarizeMeasurements(done.measurements);
   assert.equal(summary.complete, false);
   assert.deepEqual(summary.missing, ["modelCall", "stepDuration"]);
+});
+
+test("more step durations than agent calls is incomplete", () => {
+  const s = recordSandboxStart(started(), 5);
+  assert.ok(s.ok);
+  const i = recordBrowserInstall(s.measurements, 6);
+  assert.ok(i.ok);
+  const a1 = recordModelCall(i.measurements, "agent", 1, 1);
+  assert.ok(a1.ok);
+  const step1 = recordStepDuration(a1.measurements, 10);
+  assert.ok(step1.ok);
+  const step2 = recordStepDuration(step1.measurements, 20);
+  assert.ok(step2.ok);
+  const done = finishMeasurements(step2.measurements, 7);
+  assert.ok(done.ok);
+
+  const summary = summarizeMeasurements(done.measurements);
+  assert.equal(summary.complete, false);
+  assert.deepEqual(summary.missing, ["stepDuration"]);
 });
 
 test("mismatched agent calls and step durations is incomplete", () => {

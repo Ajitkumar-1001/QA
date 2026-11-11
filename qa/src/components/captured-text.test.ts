@@ -30,8 +30,8 @@ test("script markup appears only as escaped text, never as a script element", ()
 
   assert.equal(html.includes("<script"), false);
   assert.ok(html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
-  assert.ok(html.includes('aria-label="Page text"'));
-  assert.ok(html.includes("<h2>Page text</h2>"));
+  assert.ok(html.includes('aria-labelledby="captured-page_text"'));
+  assert.ok(html.includes('<h2 id="captured-page_text">Page text</h2>'));
 });
 
 test("img onerror markup appears only as escaped text, never as an img element", () => {
@@ -39,8 +39,8 @@ test("img onerror markup appears only as escaped text, never as an img element",
 
   assert.equal(html.includes("<img"), false);
   assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt;"));
-  assert.ok(html.includes('aria-label="Console log"'));
-  assert.ok(html.includes("<h2>Console log</h2>"));
+  assert.ok(html.includes('aria-labelledby="captured-console"'));
+  assert.ok(html.includes('<h2 id="captured-console">Console log</h2>'));
 });
 
 test("object content renders as escaped pretty-printed JSON text", () => {
@@ -49,8 +49,8 @@ test("object content renders as escaped pretty-printed JSON text", () => {
     status: 200,
   });
 
-  assert.ok(html.includes('aria-label="Network log"'));
-  assert.ok(html.includes("<h2>Network log</h2>"));
+  assert.ok(html.includes('aria-labelledby="captured-network"'));
+  assert.ok(html.includes('<h2 id="captured-network">Network log</h2>'));
   assert.ok(html.includes("&quot;url&quot;"));
   assert.ok(html.includes("https://example.com"));
   assert.ok(html.includes("&quot;status&quot;"));
@@ -62,8 +62,8 @@ test("whitespace and newlines are preserved inside the pre text", () => {
   const content = "line one\n  indented\n\nline three";
   const html = renderCaptured("model_output", content);
 
-  assert.ok(html.includes('aria-label="Model output"'));
-  assert.ok(html.includes("<h2>Model output</h2>"));
+  assert.ok(html.includes('aria-labelledby="captured-model_output"'));
+  assert.ok(html.includes('<h2 id="captured-model_output">Model output</h2>'));
   assert.match(html, /<pre[^>]*>line one\n  indented\n\nline three<\/pre>/);
 });
 

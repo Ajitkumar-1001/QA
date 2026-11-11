@@ -50,6 +50,66 @@ test("parseServerConfig accepts explicit valid overrides", () => {
   assert.equal(result.config.concurrencyCap, MAX_CONCURRENCY_CAP);
 });
 
+test("parseServerConfig rejects whitespace-only owner secret", () => {
+  for (const secret of ["", "   ", "\t\n"]) {
+    const result = parseServerConfig(validEnv({ QAFORGE_OWNER_SECRET: secret }));
+    assert.equal(result.ok, false, JSON.stringify(secret));
+    assert.ok(!result.ok);
+    assert.ok(result.errors.some((e) => e.variable === "QAFORGE_OWNER_SECRET"));
+    const serialized = JSON.stringify(result.errors);
+    assert.equal(serialized.includes(secret.trim() ? secret : "   "), false);
+  }
+});
+
+test("parseServerConfig rejects owner secret that is long but under 32 after trim", () => {
+  const padded = `  ${"a".repeat(30)}  `;
+  assert.ok(padded.trim().length < 32);
+  const result = parseServerConfig(validEnv({ QAFORGE_OWNER_SECRET: padded }));
+  assert.equal(result.ok, false);
+  assert.ok(!result.ok);
+  assert.ok(result.errors.some((e) => e.variable === "QAFORGE_OWNER_SECRET"));
+  const serialized = JSON.stringify(result.errors);
+  assert.equal(serialized.includes(padded), false);
+  assert.equal(serialized.includes("a".repeat(30)), false);
+});
+
+test("parseServerConfig stores trimmed owner secret when padding surrounds a valid secret", () => {
+  const secret = `  ${VALID_SECRET}  `;
+  const result = parseServerConfig(validEnv({ QAFORGE_OWNER_SECRET: secret }));
+  assert.equal(result.ok, true);
+  assert.ok(result.ok);
+  assert.equal(result.config.ownerSecret, VALID_SECRET);
+});
+
+test("parseServerConfig rejects leading-zero cap integers 08 and 007", () => {
+  for (const bad of ["08", "007"]) {
+    const monthly = parseServerConfig(validEnv({ QAFORGE_MONTHLY_RUN_CAP: bad }));
+    assert.equal(monthly.ok, false, `monthly:${bad}`);
+    assert.ok(!monthly.ok);
+    assert.ok(monthly.errors.some((e) => e.variable === "QAFORGE_MONTHLY_RUN_CAP"));
+
+    const concurrency = parseServerConfig(validEnv({ QAFORGE_CONCURRENCY_CAP: bad }));
+    assert.equal(concurrency.ok, false, `concurrency:${bad}`);
+    assert.ok(!concurrency.ok);
+    assert.ok(
+      concurrency.errors.some((e) => e.variable === "QAFORGE_CONCURRENCY_CAP"),
+    );
+  }
+});
+
+test("parseServerConfig accepts cap value zero", () => {
+  const result = parseServerConfig(
+    validEnv({
+      QAFORGE_MONTHLY_RUN_CAP: "0",
+      QAFORGE_CONCURRENCY_CAP: "0",
+    }),
+  );
+  assert.equal(result.ok, true);
+  assert.ok(result.ok);
+  assert.equal(result.config.monthlyRunCap, 0);
+  assert.equal(result.config.concurrencyCap, 0);
+});
+
 test("parseServerConfig requires a secret of at least 32 characters", () => {
   const missing = parseServerConfig({});
   assert.equal(missing.ok, false);

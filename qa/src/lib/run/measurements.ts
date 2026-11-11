@@ -30,7 +30,6 @@ export type MeasurementResult =
   | { ok: false; error: MeasurementError };
 
 export type MustMeasurement =
-  | "modelId"
   | "sandboxStartMs"
   | "browserInstallMs"
   | "modelCall"
@@ -68,7 +67,7 @@ export function startMeasurements(modelId: string): MeasurementResult {
     return fail("invalid_model_id");
   }
   return ok({
-    modelId,
+    modelId: modelId.trim(),
     stepDurationsMs: [],
     modelCalls: [],
   });
