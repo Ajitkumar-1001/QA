@@ -124,4 +124,11 @@ Doc paths are relative to `qa/`. Run each check from the repository root.
 **Check:** `git grep --untracked -lE "from ['\"]next/server['\"]" -- qa/src ':!qa/src/app'` lists only `qa/src/proxy.ts`
 **Added:** 2026-11-20 · next@16.4.5 · cache-model: n/a
 
-Last validated: 2026-11-20 against next@16.4.5
+### NX-017 · project · scope: qa/src/app/runs/**
+**Rule:** Run the stale-run reaper in the result page's data load, and call `reapStaleRuns` from no other route file except the Start action.
+**Why:** FR-025's page trigger is a deliberate write during render, an exception to the bundled advice against mutations in render; it only ends runs the reaper rule already counts as stale and never changes a `done` run.
+**Source:** user decision, 2026-11-21 (the owner confirmed item 3 as written); node_modules/next/dist/docs/01-app/02-guides/data-security.md line 569 (the advice it departs from); qa/src/app/runs/[id]/page.tsx
+**Check:** `git grep --untracked -l "reapStaleRuns" -- qa/src/app` lists only `qa/src/app/actions.ts` and `qa/src/app/runs/[id]/page.tsx`
+**Added:** 2026-11-21 · next@16.4.5 · cache-model: cacheComponents
+
+Last validated: 2026-11-21 against next@16.4.5
