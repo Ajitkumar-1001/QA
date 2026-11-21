@@ -117,4 +117,11 @@ Doc paths are relative to `qa/`. Run each check from the repository root.
 **Check:** review: does every gate list `next typegen` before `tsc --noEmit`?
 **Added:** 2026-11-19 · next@16.4.5 · cache-model: n/a
 
-Last validated: 2026-11-19 against next@16.4.5
+### NX-016 · project · scope: qa/src/proxy.ts, qa/src/lib/access/**
+**Rule:** Keep `qa/src/proxy.ts` a thin wrapper that imports `next/server` and calls the pure decision in `qa/src/lib/access/gate.ts`; put every check and every refusal response in `qa/src/lib/access/` and test them there.
+**Why:** `next/server` fails to load under `node --test`, so logic left in `proxy.ts` cannot be tested by the gate both lanes run.
+**Source:** qa/src/proxy.ts and qa/src/lib/access/gate.ts; probe on 2026-11-20 with Node 22.23.4 (`import("next/server")` fails with `ERR_MODULE_NOT_FOUND`); node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md lines 465–466 (response headers on a pass-through need `NextResponse.next`)
+**Check:** `git grep --untracked -lE "from ['\"]next/server['\"]" -- qa/src ':!qa/src/app'` lists only `qa/src/proxy.ts`
+**Added:** 2026-11-20 · next@16.4.5 · cache-model: n/a
+
+Last validated: 2026-11-20 against next@16.4.5
