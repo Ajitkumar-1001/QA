@@ -3,13 +3,10 @@ import assert from "node:assert/strict";
 import type { PGlite } from "@electric-sql/pglite";
 import { createLogger } from "../log.ts";
 import { REASON_CODES, RUN_STATUSES, VERDICTS } from "../run/status.ts";
+import { reapRun } from "../run/lease.ts";
+import { FIXTURES, HOUR_MS, NOW, WINDOW_MS, at, type Seed } from "./reaper-fixtures.ts";
 import { createRunsRepo } from "./runs.ts";
 import { freshDb } from "./test-db.ts";
-
-const NOW = new Date("2026-11-20T12:00:00.000Z");
-const WINDOW_MS = 5 * 60_000;
-const HOUR_MS = 3_600_000;
-const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs);
 
 let db: PGlite;
 let lines: string[];
@@ -26,15 +23,6 @@ beforeEach(async () => {
   lines = [];
   repo = createRunsRepo({ db, log: createLogger({ secrets: [], write: (line) => lines.push(line) }) });
 });
-
-type Seed = {
-  status: string;
-  createdAt: Date;
-  leaseExpiresAt?: Date | null;
-  verdict?: string | null;
-  reason?: string | null;
-  finishedAt?: Date | null;
-};
 
 /** Inserts a row as given, bypassing the repository, so a test can build any state. */
 async function seed(s: Seed): Promise<string> {
@@ -138,24 +126,6 @@ test("the table's allowed lists are exactly the lists in status.ts", async () =>
   assert.deepEqual(allowed("reason_code"), [...REASON_CODES].sort());
 });
 
-// The lease and start-window rule of FR-025, with inclusive boundaries. The SQL reaper and `reapRun` must agree on these.
-type Fixture = { name: string; run: Seed; becomes: "lease_expired" | "never_started" | null };
-const FIXTURES: Fixture[] = [
-  { name: "running, lease after now, created inside the window", run: { status: "running", createdAt: at(-60_000), leaseExpiresAt: at(1) }, becomes: null },
-  { name: "running, lease after now, created long before", run: { status: "running", createdAt: at(-HOUR_MS), leaseExpiresAt: at(1) }, becomes: null },
-  { name: "running, lease ends exactly now", run: { status: "running", createdAt: at(-60_000), leaseExpiresAt: at(0) }, becomes: "lease_expired" },
-  { name: "running, lease ended before now", run: { status: "running", createdAt: at(-HOUR_MS), leaseExpiresAt: at(-1) }, becomes: "lease_expired" },
-  { name: "running, no lease, created inside the window", run: { status: "running", createdAt: at(-60_000) }, becomes: "lease_expired" },
-  { name: "running, no lease, created long before", run: { status: "running", createdAt: at(-HOUR_MS) }, becomes: "lease_expired" },
-  { name: "queued, created inside the window", run: { status: "queued", createdAt: at(-WINDOW_MS + 1) }, becomes: null },
-  { name: "queued, inside the window, lease in the past", run: { status: "queued", createdAt: at(-60_000), leaseExpiresAt: at(-1000) }, becomes: null },
-  { name: "queued, created after now", run: { status: "queued", createdAt: at(1) }, becomes: null },
-  { name: "queued, created exactly at now minus the window", run: { status: "queued", createdAt: at(-WINDOW_MS) }, becomes: "never_started" },
-  { name: "queued, created long before", run: { status: "queued", createdAt: at(-HOUR_MS) }, becomes: "never_started" },
-  { name: "queued, created long before, lease in the future", run: { status: "queued", createdAt: at(-HOUR_MS), leaseExpiresAt: at(60_000) }, becomes: "never_started" },
-  { name: "done, old created_at and an expired lease", run: { status: "done", createdAt: at(-HOUR_MS), leaseExpiresAt: at(-60_000), verdict: "PASS", finishedAt: at(-HOUR_MS / 2) }, becomes: null },
-];
-
 test("reapStaleRuns ends exactly the runs FR-025 says it ends, and leaves every other row untouched", async () => {
   const ids = new Map<string, string>();
   const before = new Map<string, unknown>();
@@ -185,6 +155,39 @@ test("reapStaleRuns ends exactly the runs FR-025 says it ends, and leaves every 
       assert.deepEqual(after.finishedAt, NOW, fixture.name);
     }
   }
+});
+
+test("the SQL reaper agrees with reapRun on every fixture, and leaves a row reapRun refuses unchanged", async () => {
+  const seeded = new Map<string, { id: string; before: unknown }>();
+  for (const fixture of FIXTURES) {
+    const id = await seed(fixture.run);
+    seeded.set(fixture.name, { id, before: await snapshot(id) });
+  }
+
+  await repo.reapStaleRuns(NOW, WINDOW_MS);
+
+  let reaped = 0;
+  let refused = 0;
+  for (const fixture of FIXTURES) {
+    const entry = seeded.get(fixture.name);
+    assert.ok(entry);
+    const expected = reapRun(
+      { status: fixture.run.status, createdAt: fixture.run.createdAt, leaseExpiresAt: fixture.run.leaseExpiresAt ?? undefined },
+      NOW,
+    );
+    if (expected.ok) {
+      reaped += 1;
+      const row = await repo.getRun(entry.id);
+      assert.ok(row);
+      assert.equal(row.status, expected.run.status, fixture.name);
+      assert.equal(row.verdict, expected.run.verdict, fixture.name);
+      assert.equal(row.reasonCode, expected.run.reasonCode, fixture.name);
+    } else {
+      refused += 1;
+      assert.deepEqual(await snapshot(entry.id), entry.before, `${fixture.name}: reapRun refuses it, so the row must not change`);
+    }
+  }
+  assert.ok(reaped > 0 && refused > 0, "both outcomes must occur, or the comparison proves nothing");
 });
 
 test("reapStaleRuns logs run_reaped with the reason and the age, and a second pass does nothing", async () => {
