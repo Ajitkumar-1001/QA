@@ -6,6 +6,8 @@ import {
   DEFAULT_MONTHLY_RUN_CAP,
   DEFAULT_OBJECTIVE,
   DEFAULT_TARGET_URL,
+  parseDatabaseUrl,
+  parseOwnerSecret,
   parseServerConfig,
   resolveRunTarget,
 } from "./config.ts";
@@ -241,4 +243,83 @@ test("resolveRunTarget returns only the configured target and objective", () => 
     targetUrl: "https://example.com/app",
     objective: "click the save button",
   });
+});
+
+test("parseOwnerSecret applies the same rule as parseServerConfig and reads no other variable", () => {
+  assert.deepEqual(parseOwnerSecret({ QAFORGE_OWNER_SECRET: `  ${VALID_SECRET}  ` }), {
+    ok: true,
+    secret: VALID_SECRET,
+  });
+  // A bad cap does not break the gate: only the secret is read.
+  assert.equal(
+    parseOwnerSecret({ QAFORGE_OWNER_SECRET: VALID_SECRET, QAFORGE_MONTHLY_RUN_CAP: "nope" }).ok,
+    true,
+  );
+});
+
+test("parseOwnerSecret refuses an unset, blank or short secret and never echoes it", () => {
+  const short = "short-canary-secret";
+  for (const value of [undefined, "", "   ", short, ` ${"b".repeat(31)} `]) {
+    const result = parseOwnerSecret({ QAFORGE_OWNER_SECRET: value });
+    assert.equal(result.ok, false, `accepted ${JSON.stringify(value)}`);
+    assert.ok(!result.ok);
+    assert.equal(result.error.variable, "QAFORGE_OWNER_SECRET");
+    assert.equal(JSON.stringify(result).includes("canary"), false);
+  }
+  const unset = parseOwnerSecret({});
+  assert.ok(!unset.ok);
+  assert.equal(unset.error.problem, "required");
+});
+
+test("parseDatabaseUrl accepts a postgres or postgresql URL and trims it", () => {
+  for (const url of [
+    "postgres://user:pw@db.example.com/app",
+    "postgresql://user:pw@db.example.com:5432/app?sslmode=require",
+    "postgresql://localhost/app",
+  ]) {
+    assert.deepEqual(parseDatabaseUrl({ DATABASE_URL: `  ${url}\n` }), { ok: true, url });
+  }
+});
+
+test("parseDatabaseUrl reads only DATABASE_URL, so the other settings cannot break it", () => {
+  const env = {
+    DATABASE_URL: "postgres://user:pw@db.example.com/app",
+    QAFORGE_OWNER_SECRET: "short",
+    QAFORGE_MONTHLY_RUN_CAP: "nope",
+  };
+  assert.equal(parseDatabaseUrl(env).ok, true);
+  // ...and the server config does not read it.
+  assert.equal(
+    parseServerConfig({ QAFORGE_OWNER_SECRET: VALID_SECRET, DATABASE_URL: "garbage" }).ok,
+    true,
+  );
+});
+
+test("parseDatabaseUrl refuses an unset, blank, wrong-scheme or host-less value and never echoes it", () => {
+  const canary = "canary-password";
+  const refused: Array<string | undefined> = [
+    undefined,
+    "",
+    "   ",
+    `mysql://user:${canary}@db.example.com/app`,
+    `https://user:${canary}@db.example.com/app`,
+    `postgres://user:${canary}@/app`,
+    // Parses as a URL but names no host: libpq would read it as a local socket.
+    `postgres:///app?password=${canary}`,
+    `user:${canary}@db.example.com/app`,
+    `not a url ${canary}`,
+  ];
+  for (const value of refused) {
+    const result = parseDatabaseUrl({ DATABASE_URL: value });
+    assert.equal(result.ok, false, `accepted ${JSON.stringify(value)}`);
+    assert.ok(!result.ok);
+    assert.equal(result.error.variable, "DATABASE_URL");
+    assert.equal(JSON.stringify(result).includes(canary), false);
+  }
+  const unset = parseDatabaseUrl({});
+  assert.ok(!unset.ok);
+  assert.equal(unset.error.problem, "required");
+  const wrong = parseDatabaseUrl({ DATABASE_URL: "mysql://u@h/db" });
+  assert.ok(!wrong.ok);
+  assert.equal(wrong.error.problem, "must be a postgres:// or postgresql:// URL");
 });
