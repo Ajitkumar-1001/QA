@@ -103,6 +103,20 @@ Doc paths are relative to `qa/`. Run each check from the repository root.
 **Check:** `git grep --untracked -nE "<(img|script)[ >]|fonts[.]googleapis[.]com" -- qa/src/app` prints nothing
 **Added:** 2026-11-19 · next@16.4.5 · cache-model: n/a
 
+### NX-018 · default · scope: qa/src/app/**/error.tsx, qa/src/app/global-error.tsx
+**Rule:** Give each error boundary a `retry` prop and call `retry()` from its Try again control; use `reset()` only when the error state must clear without re-fetching.
+**Why:** `retry()` re-fetches and re-renders the segment, so a failed load or a failed Start can recover, while `reset()` re-renders the children without re-fetching and retries nothing.
+**Source:** node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/error.md lines 117–121 and 155–157
+**Check:** `git grep --untracked -nE "\breset\b" -- qa/src/app` prints nothing; review: does each error boundary's button call `retry()`?
+**Added:** 2026-11-21 · next@16.4.5 · cache-model: n/a
+
+### NX-019 · default · scope: qa/src/app/**
+**Rule:** Call `redirect()` in a Server Action outside any `try` block.
+**Why:** `redirect()` works by throwing, so a `catch` around it swallows the redirect.
+**Source:** node_modules/next/dist/docs/01-app/03-api-reference/04-functions/redirect.md lines 51–53 and 62
+**Check:** `git grep --untracked -nE "\btry[[:space:]]*[{]" -- qa/src/app/actions.ts` prints nothing; review: in any other `"use server"` file, is each `redirect()` outside a `try` block?
+**Added:** 2026-11-21 · next@16.4.5 · cache-model: n/a
+
 ### NX-012 · project · scope: qa/src/lib/**, qa/src/components/**
 **Rule:** Write modules that `node --test` loads as `.ts` files that build elements with `createElement` (no `.tsx`), use relative imports that end in `.ts`, and use `import type` for type-only imports.
 **Why:** Node strips types without a build step, so it has no JSX transform and no `@/` alias, and the test gate fails.
@@ -129,6 +143,13 @@ Doc paths are relative to `qa/`. Run each check from the repository root.
 **Why:** FR-025's page trigger is a deliberate write during render, an exception to the bundled advice against mutations in render; it only ends runs the reaper rule already counts as stale and never changes a `done` run.
 **Source:** user decision, 2026-11-21 (the owner confirmed item 3 as written); node_modules/next/dist/docs/01-app/02-guides/data-security.md line 569 (the advice it departs from); qa/src/app/runs/[id]/page.tsx
 **Check:** `git grep --untracked -l "reapStaleRuns" -- qa/src/app` lists only `qa/src/app/actions.ts` and `qa/src/app/runs/[id]/page.tsx`
+**Added:** 2026-11-21 · next@16.4.5 · cache-model: cacheComponents
+
+### NX-020 · project · scope: qa/src/app/runs/**
+**Rule:** Call `notFound()` only for a failed owner check, a malformed run id or a missing run; let a database error throw to the error boundary.
+**Why:** A database failure shown as a missing run tells the owner a real run is gone and offers no retry.
+**Source:** qa/src/app/runs/[id]/page.tsx; user decision, 2026-11-19 (CC-9 step 4 of the approved checklist, PRD §10.2); smoke run of 2026-11-21 (a database error carried no `noindex` meta, a malformed id did)
+**Check:** `git grep --untracked -n "notFound()" -- qa/src/app/runs` lists only the three guards (owner, id, null run); review: is any `notFound()` reachable from a caught database error?
 **Added:** 2026-11-21 · next@16.4.5 · cache-model: cacheComponents
 
 Last validated: 2026-11-21 against next@16.4.5
