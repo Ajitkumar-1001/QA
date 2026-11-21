@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test \"src/**/*.test.ts\"",
-    "test:db": "node --test \"src/**/*.dbtest.ts\""
+    "test:db": "node --test \"src/**/*.dbtest.ts\"",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.ts",
+    "db:migrate:dry": "node --env-file-if-exists=.env.local scripts/migrate.ts --dry-run"
   },
   "dependencies": {
     "@mastra/core": "^1.82.0",
