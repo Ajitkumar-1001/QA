@@ -4,7 +4,7 @@
  */
 import { evaluateCriterion } from "./criteria.ts";
 import type { Criterion, CriterionResult, FinalCapture } from "./criteria.ts";
-import type { ReasonCode } from "./status.ts";
+import { REASON_TEXT, type ReasonCode } from "./status.ts";
 
 export type AgentOutcome =
   | { completed: true; finalMessage?: string }
@@ -23,7 +23,12 @@ export type VerdictResult =
   | { verdict: "INCONCLUSIVE"; reasonCode: ReasonCode; results: CriterionResult[]; summary: string };
 
 function inconclusive(reasonCode: ReasonCode): VerdictResult {
-  return { verdict: "INCONCLUSIVE", reasonCode, results: [], summary: "No verdict was reached." };
+  return {
+    verdict: "INCONCLUSIVE",
+    reasonCode,
+    results: [],
+    summary: `INCONCLUSIVE. No verdict: ${REASON_TEXT[reasonCode]}`,
+  };
 }
 
 export function computeVerdict(input: VerdictInput): VerdictResult {
@@ -34,10 +39,20 @@ export function computeVerdict(input: VerdictInput): VerdictResult {
 
   const capture = input.capture;
   const results = input.criteria.map((c) => evaluateCriterion(c, capture));
+  const n = results.length;
   const held = results.filter((r) => r.held).length;
+  if (held === n) {
+    const summary =
+      n === 1
+        ? "PASS. The 1 check held on the final page."
+        : `PASS. All ${n} checks held on the final page.`;
+    return { verdict: "PASS", results, summary };
+  }
+  const k = n - held;
+  const unit = n === 1 ? "check" : "checks";
   return {
-    verdict: held === results.length ? "PASS" : "FAIL",
+    verdict: "FAIL",
     results,
-    summary: `${held} of ${results.length} checks held on the final page.`,
+    summary: `FAIL. ${k} of ${n} ${unit} did not hold on the final page.`,
   };
 }
