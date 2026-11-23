@@ -7,6 +7,7 @@ node_modules/
 # Never tracked: private docs and GitHub metadata
 
 docs/
+CLAUDE.md
 .github/
 
 AGENTS.md

@@ -39,11 +39,31 @@ const httpsUrlNoCredentials = z
     return parsed.username === "" && parsed.password === "";
   }, { message: "must not contain credentials" });
 
+/** The one owner-secret rule: trimmed, at least 32 characters. */
+const ownerSecretSchema = z
+  .string()
+  .transform((value) => value.trim())
+  .pipe(z.string().min(32));
+
+const POSTGRES_PROTOCOLS = new Set(["postgres:", "postgresql:"]);
+
+/** A Postgres connection URL: trimmed, parseable, a postgres(ql):// scheme and a host. */
+const databaseUrlSchema = z
+  .string()
+  .transform((value) => value.trim())
+  .pipe(
+    z.string().refine(
+      (value) => {
+        if (!URL.canParse(value)) return false;
+        const url = new URL(value);
+        return POSTGRES_PROTOCOLS.has(url.protocol) && url.hostname !== "";
+      },
+      { message: "must be a postgres:// or postgresql:// URL" },
+    ),
+  );
+
 const envSchema = z.object({
-  QAFORGE_OWNER_SECRET: z
-    .string()
-    .transform((value) => value.trim())
-    .pipe(z.string().min(32)),
+  QAFORGE_OWNER_SECRET: ownerSecretSchema,
   QAFORGE_TARGET_URL: httpsUrlNoCredentials,
   QAFORGE_OBJECTIVE: z.string().min(1).max(1000),
   QAFORGE_MONTHLY_RUN_CAP: strictNonNegInt,
@@ -124,6 +144,57 @@ export function parseServerConfig(
       concurrencyCap: parsed.data.QAFORGE_CONCURRENCY_CAP,
     },
   };
+}
+
+export type ParseOwnerSecretResult =
+  | { ok: true; secret: string }
+  | { ok: false; error: ConfigError };
+
+/**
+ * Validate only the owner secret, so the owner gate depends on no other
+ * variable. Errors name the variable, never the value.
+ */
+export function parseOwnerSecret(
+  env: Record<string, string | undefined>,
+): ParseOwnerSecretResult {
+  const parsed = ownerSecretSchema.safeParse(env.QAFORGE_OWNER_SECRET);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return {
+      ok: false,
+      error: {
+        variable: "QAFORGE_OWNER_SECRET",
+        problem: issue ? problemFrom(issue) : "invalid",
+      },
+    };
+  }
+  return { ok: true, secret: parsed.data };
+}
+
+export type ParseDatabaseUrlResult =
+  | { ok: true; url: string }
+  | { ok: false; error: ConfigError };
+
+/**
+ * Validate only `DATABASE_URL`, outside the owner secret's parser and the
+ * server config, so neither the gate nor the page config depends on it.
+ * Errors name the variable, never the value, which holds the password.
+ */
+export function parseDatabaseUrl(
+  env: Record<string, string | undefined>,
+): ParseDatabaseUrlResult {
+  const parsed = databaseUrlSchema.safeParse(env.DATABASE_URL);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return {
+      ok: false,
+      error: {
+        variable: "DATABASE_URL",
+        problem: issue ? problemFrom(issue) : "invalid",
+      },
+    };
+  }
+  return { ok: true, url: parsed.data };
 }
 
 /** Run target comes only from server config; client input cannot reach it (FR-002). */
