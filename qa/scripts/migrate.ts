@@ -5,6 +5,7 @@
  */
 import { Client } from "pg";
 import { parseDatabaseUrl } from "../src/lib/config.ts";
+import { databasePassword } from "../src/lib/db/client.ts";
 import { loadMigrations, migrate } from "../src/lib/db/migrate.ts";
 import { createLogger } from "../src/lib/log.ts";
 
@@ -17,8 +18,10 @@ if (!parsed.ok) {
 }
 
 // A driver error can quote the password alone, so it is a secret of its own.
-const password = decodeURIComponent(new URL(parsed.url).password);
-const log = createLogger({ secrets: [parsed.url, password], write: (line) => console.error(line) });
+const log = createLogger({
+  secrets: [parsed.url, databasePassword(parsed.url)],
+  write: (line) => console.error(line),
+});
 const client = new Client({ connectionString: parsed.url });
 
 try {

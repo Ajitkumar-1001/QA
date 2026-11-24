@@ -6,7 +6,7 @@
 import { headers } from "next/headers";
 import { decideRequest } from "../../lib/access/gate.ts";
 import { parseDatabaseUrl, parseServerConfig, type ServerConfig } from "../../lib/config.ts";
-import { createPool } from "../../lib/db/client.ts";
+import { createPool, databasePassword } from "../../lib/db/client.ts";
 import { createRunsRepo, type RunsRepo } from "../../lib/db/runs.ts";
 import { createLogger, type Logger } from "../../lib/log.ts";
 import { PageLoadError } from "../../lib/run/page-state.ts";
@@ -14,12 +14,9 @@ import { PageLoadError } from "../../lib/run/page-state.ts";
 /** Redacts the owner secret, the connection string and its password from every field and error. */
 export function getLog(): Logger {
   const { QAFORGE_OWNER_SECRET: ownerSecret, DATABASE_URL: databaseUrl } = process.env;
-  const dbPassword =
-    databaseUrl !== undefined && URL.canParse(databaseUrl)
-      ? decodeURIComponent(new URL(databaseUrl).password)
-      : undefined;
   return createLogger({
-    secrets: [ownerSecret, databaseUrl, dbPassword],
+    // The pool connects with the trimmed URL (parseDatabaseUrl), so that form is a secret too.
+    secrets: [ownerSecret, databaseUrl, databaseUrl?.trim(), databasePassword(databaseUrl)],
     write: (line) => console.log(line),
   });
 }
